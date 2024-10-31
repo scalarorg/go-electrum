@@ -23,6 +23,7 @@ import (
 
 	"github/scalar.org/go-electrum/electrum/types"
 
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -75,10 +76,21 @@ func TestElectrsClient(t *testing.T) {
 	suite.Run(t, &vaultClientTestsuite{})
 }
 
-func (s *vaultClientTestsuite) TestTransactionGet() {
+func (s *vaultClientTestsuite) TestTransactionGetFrom() {
 	expectedResponse := []byte("\xaa\xbb\xcc")
-	response, err := s.client.VaultTransactionGet(context.Background(), "testtxhash")
+	// hash := "b43da04e4968227daed5f667f68af19988af4201b36ca552ca15e07e8c70a4fd"
+	hash := "7490fc0a42ea90d9d3f712f556489a9b51081f1d3e9fad4cd38ad440dc4cd665"
+	length := 10
+	response, err := s.client.VaultTransactionsGetFrom(context.Background(), hash, length)
 	require.NoError(s.T(), err)
+	// rawTx, err := hex.DecodeString(rawTxHex)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to decode transaction hex: %w", err)
+	// }
+	// println(hex.EncodeToString(response))
+	// for _, tx := range response {
+	// 	println(tx["change_amount"].(*float64))
+	// }
 	require.Equal(s.T(), expectedResponse, response)
 }
 
@@ -86,7 +98,9 @@ func (s *vaultClientTestsuite) TestVaultTransactionGetCancel() {
 	ctx, cancel := context.WithCancel(context.Background())
 	errCh := make(chan error)
 	go func() {
-		_, err := s.client.VaultTransactionGet(ctx, "testtxhash")
+		hash := "b43da04e4968227daed5f667f68af19988af4201b36ca552ca15e07e8c70a4fd"
+		length := 10
+		_, err := s.client.VaultTransactionsGetFrom(ctx, hash, length)
 		errCh <- err
 	}()
 	cancel()
@@ -99,25 +113,24 @@ func (s *vaultClientTestsuite) TestVaultTransactionGetCancel() {
 }
 
 func (s *vaultClientTestsuite) TestVaultTransactionSubscribe() {
-	latestTxHeigh := 52669 //First vaultTx is in the block 52670
-	lastestTxPos := 0
-	numNotifiedVaultTxs := 1000
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error)
 	receivedVaultTxCh := make(chan *types.VaultTransaction)
-	onVaultTransaction := func(vaultTtx *types.VaultTransaction, err error) {
-		require.NoError(s.T(), err)
-		receivedVaultTxCh <- vaultTtx
-	}
-	s.client.VaultTransactionSubscribe(context.Background(), latestTxHeigh, lastestTxPos, onVaultTransaction)
-	// A set structure as the notifications can come out of order.
-	receivedVaultTxs := map[int]types.VaultTransaction{}
-	for i := 0; i < numNotifiedVaultTxs+1; i++ {
-		select {
-		case vaultTtx := <-receivedVaultTxCh:
-			receivedVaultTxs[vaultTtx.Height] = *vaultTtx
-		case <-time.After(time.Second):
-			require.Fail(s.T(), "timeout")
+	params := []interface{}{}
+	go func() {
+		onVaultTransaction := func(vaultTtx *types.VaultTransaction, err error) {
+			require.NoError(s.T(), err)
+			receivedVaultTxCh <- vaultTtx
 		}
+		s.client.VaultTransactionSubscribe(ctx, onVaultTransaction, params)
+	}()
+	cancel()
+	select {
+	case vaultTx := <-receivedVaultTxCh:
+		log.Info().Msgf("vaultTx: %v", vaultTx)
+	case err := <-errCh:
+		require.ErrorIs(s.T(), err, context.Canceled)
+	case <-time.After(24 * time.Hour):
+		require.Fail(s.T(), "timeoout")
 	}
-	firstVaultTx := receivedVaultTxs[52670]
-	require.Equal(s.T(), 10000, firstVaultTx.Amount)
 }

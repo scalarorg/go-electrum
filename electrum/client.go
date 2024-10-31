@@ -447,24 +447,19 @@ func (c *Client) GetMerkle(ctx context.Context, txHashHex string, height int) (*
 	return &response, nil
 }
 
-func (c *Client) VaultTransactionGet(ctx context.Context, txHash string) ([]byte, error) {
-	var rawTxHex string
+func (c *Client) VaultTransactionsGetFrom(ctx context.Context, txHash string, length int) ([]map[string]interface{}, error) {
+	var response []map[string]interface{}
 	ctx, cancel := c.timeoutCtx(ctx)
 	defer cancel()
-	err := c.rpc.MethodBlocking(ctx, &rawTxHex, string(VaultTransactionGet), txHash)
+	err := c.rpc.MethodBlocking(ctx, &response, "vault.transactions.subscribe", txHash, length)
 	if err != nil {
 		return nil, err
 	}
-	rawTx, err := hex.DecodeString(rawTxHex)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode transaction hex: %w", err)
-	}
-	return rawTx, nil
+	return response, nil
 }
 
-func (c *Client) VaultTransactionSubscribe(ctx context.Context, latestTxHeight int, latestTxPos int, result func(vault_tx *types.VaultTransaction, err error)) {
-	method := VaultTransactionSubscribe.String()
-	c.registerNotification(method, func(params json.RawMessage) {
+func (c *Client) VaultTransactionSubscribe(ctx context.Context, result func(vault_tx *types.VaultTransaction, err error), params ...interface{}) {
+	c.registerNotification("vault.transactions.subscribe", func(params json.RawMessage) {
 		var h [1]types.VaultTransaction
 		if err := json.Unmarshal(params, &h); err != nil {
 			result(nil, err)
@@ -473,7 +468,6 @@ func (c *Client) VaultTransactionSubscribe(ctx context.Context, latestTxHeight i
 		result(&h[0], nil)
 	})
 	ctx, cancel := c.timeoutCtx(ctx)
-	params := []interface{}{latestTxHeight, latestTxPos}
 	err := c.rpc.Method(
 		ctx,
 		func(responseBytes []byte, err error) {
@@ -489,7 +483,7 @@ func (c *Client) VaultTransactionSubscribe(ctx context.Context, latestTxHeight i
 			}
 			result(&h, nil)
 		},
-		method,
+		"vault.transactions.subscribe",
 		params)
 	if err != nil {
 		result(nil, err)
