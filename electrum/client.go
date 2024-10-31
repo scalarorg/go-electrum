@@ -26,8 +26,8 @@ import (
 	"sync"
 	"time"
 
-	"github/scalar.org/go-electrum/electrum/types"
-	"github/scalar.org/go-electrum/jsonrpc"
+	"github.com/scalarorg/go-electrum/electrum/types"
+	"github.com/scalarorg/go-electrum/jsonrpc"
 )
 
 // supportedProtocolVersion reports to the servers the minimal supported electrum

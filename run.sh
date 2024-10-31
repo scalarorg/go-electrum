@@ -1,4 +1,7 @@
 #!/bin/bash
+start() {
+    go run . start --unix-socket /tmp/electrs.sock --rpc-server 127.0.0.1:60001
+}
 
 test_vault() {
     # go test -v ./electrum/vault_client_test.go
@@ -7,7 +10,7 @@ test_vault() {
 }
 
 # Run all tests
-all() {
+test_all() {
     go test -v ./...
 }
 

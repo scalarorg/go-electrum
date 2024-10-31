@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 )
 
@@ -59,4 +60,8 @@ type VaultTransaction struct {
 	DestChainId   int    `json:"dest_chain_id"`
 	DestChainHash string `json:"dest_chain_hash"`
 	DestAddress   string `json:"dest_address"`
+}
+
+func (tx *VaultTransaction) Marshal() ([]byte, error) {
+	return json.Marshal(tx)
 }

@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github/scalar.org/go-electrum/electrum/types"
+	"github.com/scalarorg/go-electrum/electrum/types"
 
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/require"

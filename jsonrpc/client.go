@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	"github/scalar.org/go-electrum/jsonrpc/types"
+	"github.com/scalarorg/go-electrum/jsonrpc/types"
 )
 
 const writeTimeout = 10 * time.Second
