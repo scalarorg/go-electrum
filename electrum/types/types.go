@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 )
 
@@ -53,10 +54,19 @@ type Header struct {
 }
 
 type VaultTransaction struct {
-	Height        int    `json:"height"`
-	TxHash        string `json:"tx_hash"`
+	Height        int    `json:"confirmed_height"`
+	TxHash        string `json:"txid"`
+	TxPosition    string `json:"tx_position"`
 	Amount        int64  `json:"amount"`
-	DestChainId   int    `json:"dest_chain_id"`
-	DestChainHash string `json:"dest_chain_hash"`
-	DestAddress   string `json:"dest_address"`
+	SenderAddress string `json:"sender_address"`
+	SenderPubkey  string `json:"sender_pubkey"`
+	DestChainId   int    `json:"destination_chain_id"`
+	DestChainHash string `json:"destination_contract_address"`
+	DestAddress   string `json:"destination_recipient_address"`
+	Timestamp     int64  `json:"timestamp"`
+	TxContent     string `json:"tx_content"`
+}
+
+func (tx *VaultTransaction) Marshal() ([]byte, error) {
+	return json.Marshal(tx)
 }

@@ -23,9 +23,9 @@ import (
 	"testing"
 	"time"
 
-	"github/scalar.org/go-electrum/electrum/types"
-	"github/scalar.org/go-electrum/jsonrpc/test"
-	jsonrpctypes "github/scalar.org/go-electrum/jsonrpc/types"
+	"github.com/scalarorg/go-electrum/electrum/types"
+	"github.com/scalarorg/go-electrum/jsonrpc/test"
+	jsonrpctypes "github.com/scalarorg/go-electrum/jsonrpc/types"
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"

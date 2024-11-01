@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github/scalar.org/go-electrum/jsonrpc/types"
+	"github.com/scalarorg/go-electrum/jsonrpc/types"
 
 	"github.com/stretchr/testify/require"
 )

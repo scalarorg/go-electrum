@@ -3,8 +3,8 @@ package electrum
 type Method string
 
 const (
-	VaultTransactionSubscribe Method = "vault.transactions.subscribe"
-	VaultTransactionGet       Method = "vault.transaction.get"
+	VaultTransactionsSubscribe Method = "vault.transactions.subscribe"
+	VaultTransactionsGet       Method = "vault.transactions.get"
 )
 
 func (m Method) String() string {
