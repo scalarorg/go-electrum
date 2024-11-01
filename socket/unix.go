@@ -31,6 +31,7 @@ type UnixSocketServer struct {
 
 func Start(path string, vaultTxChan <-chan types.VaultTransaction) (*UnixSocketServer, error) {
 	// Create a Unix domain socket and listen for incoming connections.
+	log.Info().Msgf("Starting unix socket server on %s", path)
 	listener, err := net.Listen("unix", path)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to create unix socket")
@@ -176,6 +177,8 @@ func (s *UnixSocketServer) handleConnection(conn net.Conn) error {
 				log.Error().Err(err).Msg("failed to write pong message")
 				return err
 			}
+		} else if msg.Type == Pong {
+			log.Debug().Msg("received pong message")
 		}
 	}
 }

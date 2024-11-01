@@ -52,25 +52,22 @@ var runElectrumCmd = &cobra.Command{
 			PingInterval:    -1,
 			SoftwareVersion: "testclient",
 		})
-
-		if err != nil {
-			return err
-		}
+		receivedVaultTxCh := make(chan *types.VaultTransaction)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
+		if err == nil {
+			params := []interface{}{}
+			go func() {
+				onVaultTransaction := func(vaultTtx *types.VaultTransaction, err error) {
+					receivedVaultTxCh <- vaultTtx
+				}
+				client.VaultTransactionSubscribe(ctx, onVaultTransaction, params)
+			}()
+		}
 
 		// Setup signal handling
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-
-		receivedVaultTxCh := make(chan *types.VaultTransaction)
-		params := []interface{}{}
-		go func() {
-			onVaultTransaction := func(vaultTtx *types.VaultTransaction, err error) {
-				receivedVaultTxCh <- vaultTtx
-			}
-			client.VaultTransactionSubscribe(ctx, onVaultTransaction, params)
-		}()
 
 		// Wait for a signal or a vault transaction
 		for {
