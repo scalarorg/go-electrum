@@ -31,18 +31,13 @@ var runElectrumCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		vaultTxCh := make(chan types.VaultTransaction)
+		vaultTxCh := make(chan *types.VaultTransaction)
 
 		unixSocketServer, err := socket.Start(unixSocketPath, vaultTxCh)
 		if err != nil {
 			return err
 		}
 		defer unixSocketServer.Close()
-		go func() {
-			for tx := range vaultTxCh {
-				log.Info().Msgf("Received vault transaction from socket: %v", tx)
-			}
-		}()
 
 		client, err := electrum.Connect(&electrum.Options{
 			Dial: func() (net.Conn, error) {
@@ -52,14 +47,14 @@ var runElectrumCmd = &cobra.Command{
 			PingInterval:    -1,
 			SoftwareVersion: "testclient",
 		})
-		receivedVaultTxCh := make(chan *types.VaultTransaction)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		if err == nil {
 			params := []interface{}{}
 			go func() {
-				onVaultTransaction := func(vaultTtx *types.VaultTransaction, err error) {
-					receivedVaultTxCh <- vaultTtx
+				onVaultTransaction := func(vaultTx *types.VaultTransaction, err error) {
+					log.Info().Msgf("vaultTx: %v", vaultTx)
+					vaultTxCh <- vaultTx
 				}
 				client.VaultTransactionSubscribe(ctx, onVaultTransaction, params)
 			}()
@@ -71,15 +66,11 @@ var runElectrumCmd = &cobra.Command{
 
 		// Wait for a signal or a vault transaction
 		for {
-			select {
-			case <-sigCh:
-				log.Info().Msg("Received shutdown signal, closing...")
-				os.Remove(unixSocketPath)
-				os.Exit(1)
-				return nil
-			case vaultTx := <-receivedVaultTxCh:
-				log.Info().Msgf("vaultTx: %v", vaultTx)
-			}
+			<-sigCh
+			log.Info().Msg("Received shutdown signal, closing...")
+			os.Remove(unixSocketPath)
+			os.Exit(1)
+			return nil
 		}
 
 	},

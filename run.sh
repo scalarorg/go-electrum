@@ -1,6 +1,8 @@
 #!/bin/bash
 start() {
-    go run . start --unix-socket /tmp/electrs.sock --rpc-server 127.0.0.1:60001
+    #
+    # go run . start --unix-socket /tmp/electrs.sock --rpc-server 127.0.0.1:60001
+    go run . start --unix-socket /tmp/electrs.sock --rpc-server 18.140.72.123:60001
 }
 
 test_vault() {

@@ -24,12 +24,12 @@ type Message struct {
 
 type UnixSocketServer struct {
 	listener    net.Listener
-	vaultTxChan <-chan types.VaultTransaction
+	vaultTxChan <-chan *types.VaultTransaction
 	connections map[net.Conn]struct{}
 	mu          sync.Mutex
 }
 
-func Start(path string, vaultTxChan <-chan types.VaultTransaction) (*UnixSocketServer, error) {
+func Start(path string, vaultTxChan <-chan *types.VaultTransaction) (*UnixSocketServer, error) {
 	// Create a Unix domain socket and listen for incoming connections.
 	log.Info().Msgf("Starting unix socket server on %s", path)
 	listener, err := net.Listen("unix", path)
@@ -57,6 +57,9 @@ func (s *UnixSocketServer) Close() error {
 	return s.listener.Close()
 }
 func (s *UnixSocketServer) handleIncommingTransaction() error {
+	// for vaultTx := range s.vaultTxChan {
+	// 	log.Info().Msgf("Received vault transaction from socket: %v", vaultTx)
+	// }
 	for {
 		vaultTx := <-s.vaultTxChan
 		// Convert VaultTransaction to bytes before writing
@@ -68,6 +71,7 @@ func (s *UnixSocketServer) handleIncommingTransaction() error {
 		for conn := range s.connections {
 			// Write in a goroutine to not block other connections
 			go func(c net.Conn) {
+				log.Info().Msgf("Write vaultTx to the socket: %x", txBytes)
 				if _, err := c.Write(txBytes); err != nil {
 					log.Error().Err(err).Msg("failed to write to connection")
 					s.removeConnection(c)
