@@ -67,11 +67,15 @@ func (s *UnixSocketServer) handleIncommingTransaction() error {
 		if err != nil {
 			return err
 		}
+		if len(s.connections) == 0 {
+			log.Warn().Msgf("No connections to write vaultTx to")
+			continue
+		}
 		s.mu.Lock()
 		for conn := range s.connections {
 			// Write in a goroutine to not block other connections
 			go func(c net.Conn) {
-				log.Info().Msgf("Write vaultTx to the socket: %x", txBytes)
+				log.Debug().Msgf("Write vaultTx to the socket: %x", txBytes)
 				if _, err := c.Write(txBytes); err != nil {
 					log.Error().Err(err).Msg("failed to write to connection")
 					s.removeConnection(c)

@@ -31,7 +31,8 @@ import (
 // const electrsRpcServer = "electrs4.btc.scalar.org:80"
 
 // const electrsRpcServer = "192.168.1.254:60001"
-const electrsRpcServer = "18.140.72.123:60001"
+// const electrsRpcServer = "18.140.72.123:60001"
+const electrsRpcServer = "127.0.0.1:60001"
 
 func TestPingElectrum(t *testing.T) {
 	// Local electrum server for btc testnet4

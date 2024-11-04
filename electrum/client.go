@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"github.com/scalarorg/go-electrum/electrum/types"
 	"github.com/scalarorg/go-electrum/jsonrpc"
 )
@@ -478,6 +479,7 @@ func (c *Client) VaultTransactionSubscribe(ctx context.Context, result func(vaul
 			}
 			var h types.VaultTransaction
 			if err := json.Unmarshal(responseBytes, &h); err != nil {
+				log.Error().Msgf("Error in VaultTransactionSubscribe: %v", err)
 				result(nil, err)
 				return
 			}
@@ -486,6 +488,7 @@ func (c *Client) VaultTransactionSubscribe(ctx context.Context, result func(vaul
 		"vault.transactions.subscribe",
 		params)
 	if err != nil {
+		log.Error().Msgf("Error in VaultTransactionSubscribe: %v", err)
 		result(nil, err)
 	}
 }

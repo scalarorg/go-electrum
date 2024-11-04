@@ -56,13 +56,13 @@ type Header struct {
 type VaultTransaction struct {
 	Height        int    `json:"confirmed_height"`
 	TxHash        string `json:"txid"`
-	TxPosition    string `json:"tx_position"`
+	TxPosition    int32  `json:"tx_position"`
 	Amount        int64  `json:"amount"`
 	SenderAddress string `json:"sender_address"`
 	SenderPubkey  string `json:"sender_pubkey"`
-	DestChainId   int    `json:"destination_chain_id"`
-	DestChainHash string `json:"destination_contract_address"`
-	DestAddress   string `json:"destination_recipient_address"`
+	DestChainId   []byte `json:"destination_chain_id"`
+	DestChainHash []byte `json:"destination_contract_address"`
+	DestAddress   []byte `json:"destination_recipient_address"`
 	Timestamp     int64  `json:"timestamp"`
 	TxContent     string `json:"tx_content"`
 }

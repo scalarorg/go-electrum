@@ -53,7 +53,7 @@ var runElectrumCmd = &cobra.Command{
 			params := []interface{}{}
 			go func() {
 				onVaultTransaction := func(vaultTx *types.VaultTransaction, err error) {
-					log.Info().Msgf("vaultTx: %v", vaultTx)
+					log.Debug().Msgf("Received vaultTx: %v", vaultTx)
 					vaultTxCh <- vaultTx
 				}
 				client.VaultTransactionSubscribe(ctx, onVaultTransaction, params)
