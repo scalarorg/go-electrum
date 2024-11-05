@@ -52,8 +52,13 @@ var runElectrumCmd = &cobra.Command{
 		if err == nil {
 			params := []interface{}{}
 			go func() {
-				onVaultTransaction := func(vaultTx *types.VaultTransaction, err error) {
-					log.Debug().Msgf("Received vaultTx: %v", vaultTx)
+				onVaultTransaction := func(vaultTxInfo *types.VaultTxInfo, err error) {
+					log.Debug().Msgf("Received vaultTx: %v", vaultTxInfo)
+					vaultTx, err := types.NewVaultTransactionFromInfo(vaultTxInfo)
+					if err != nil {
+						log.Error().Err(err).Msgf("Failed to create vault transaction from info: %v", vaultTxInfo)
+						return
+					}
 					vaultTxCh <- vaultTx
 				}
 				client.VaultTransactionSubscribe(ctx, onVaultTransaction, params)

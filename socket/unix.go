@@ -115,6 +115,15 @@ func (s *UnixSocketServer) handleConnection(conn net.Conn) error {
 			select {
 			case <-done:
 				return
+			// case vaultTx := <-s.vaultTxChan:
+			// 	txBytes, err := vaultTx.Marshal()
+			// 	if err != nil {
+			// 		log.Error().Err(err).Msg("failed to marshal test vaultTx")
+			// 	}
+			// 	if _, err := conn.Write(txBytes); err != nil {
+			// 		log.Error().Err(err).Msg("failed to write to connection")
+			// 		s.removeConnection(conn)
+			// 	}
 			case <-ticker.C:
 				msg := Message{Type: Ping}
 				pingBytes, err := json.Marshal(msg)

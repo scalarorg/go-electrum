@@ -124,9 +124,11 @@ func (s *vaultClientTestsuite) TestVaultTransactionSubscribe() {
 	receivedVaultTxCh := make(chan *types.VaultTransaction)
 	params := []interface{}{}
 	go func() {
-		onVaultTransaction := func(vaultTtx *types.VaultTransaction, err error) {
+		onVaultTransaction := func(vaultTxInfo *types.VaultTxInfo, err error) {
 			require.NoError(s.T(), err)
-			receivedVaultTxCh <- vaultTtx
+			vaultTx, err := types.NewVaultTransactionFromInfo(vaultTxInfo)
+			require.NoError(s.T(), err)
+			receivedVaultTxCh <- vaultTx
 		}
 		s.client.VaultTransactionSubscribe(ctx, onVaultTransaction, params)
 	}()
