@@ -461,8 +461,11 @@ func (c *Client) VaultTransactionsGetFrom(ctx context.Context, txHash string, le
 
 func (c *Client) VaultTransactionSubscribe(ctx context.Context, result func(vault_tx *types.VaultTxInfo, err error), params ...interface{}) {
 	c.registerNotification("vault.transactions.subscribe", func(params json.RawMessage) {
+		// log.Debug().Msgf("Received raw message: %v", params)
 		var h [1]types.VaultTxInfo
-		if err := json.Unmarshal(params, &h); err != nil {
+		err := json.Unmarshal(params, &h)
+		if err != nil {
+			log.Error().Msgf("Try to unmarshal as VaultTxInfo: %v", err)
 			result(nil, err)
 			return
 		}
@@ -486,7 +489,7 @@ func (c *Client) VaultTransactionSubscribe(ctx context.Context, result func(vaul
 			result(&h, nil)
 		},
 		"vault.transactions.subscribe",
-		params)
+		params...)
 	if err != nil {
 		log.Error().Msgf("Error in VaultTransactionSubscribe: %v", err)
 		result(nil, err)

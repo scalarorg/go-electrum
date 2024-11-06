@@ -4,11 +4,13 @@ import "github.com/spf13/cobra"
 
 var (
 	// Used for flags.
-	rpcServer     string
-	rpcServerKey  = "rpc-server"
-	unixSocket    string
-	unixSocketKey = "unix-socket"
-	rootCmd       = &cobra.Command{
+	rpcServer      string
+	rpcServerKey   = "rpc-server"
+	unixSocket     string
+	unixSocketKey  = "unix-socket"
+	lastVaultTx    string
+	lastVaultTxKey = "last-vault-tx"
+	rootCmd        = &cobra.Command{
 		Use:   "electrum",
 		Short: "Electrum client for Scalar's version of the Mempool electrs",
 	}
@@ -30,5 +32,11 @@ func init() {
 		unixSocketKey,
 		"/tmp/electrs.sock",
 		"unix socket path",
+	)
+	rootCmd.PersistentFlags().StringVar(
+		&lastVaultTx,
+		lastVaultTxKey,
+		"",
+		"last vault tx key (height:position:txid)",
 	)
 }

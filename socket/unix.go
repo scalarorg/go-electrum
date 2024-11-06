@@ -75,7 +75,8 @@ func (s *UnixSocketServer) handleIncommingTransaction() error {
 		for conn := range s.connections {
 			// Write in a goroutine to not block other connections
 			go func(c net.Conn) {
-				log.Debug().Msgf("Write vaultTx to the socket: %x", txBytes)
+				// log.Debug().Msgf("Broadcast vaultTx to the socket: %x", txBytes)
+				log.Debug().Msg("Broadcast vaultTx to the socket")
 				if _, err := c.Write(txBytes); err != nil {
 					log.Error().Err(err).Msg("failed to write to connection")
 					s.removeConnection(c)
@@ -205,4 +206,10 @@ func (s *UnixSocketServer) removeConnection(conn net.Conn) {
 	s.mu.Lock()
 	delete(s.connections, conn)
 	s.mu.Unlock()
+}
+
+func (s *UnixSocketServer) ConnectionCount() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.connections)
 }

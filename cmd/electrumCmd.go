@@ -31,13 +31,19 @@ var runElectrumCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		lastVaultTx, err := cmd.Flags().GetString(lastVaultTxKey)
+		if err != nil {
+			return err
+		}
 		vaultTxCh := make(chan *types.VaultTransaction)
-
 		unixSocketServer, err := socket.Start(unixSocketPath, vaultTxCh)
 		if err != nil {
 			return err
 		}
 		defer unixSocketServer.Close()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 
 		client, err := electrum.Connect(&electrum.Options{
 			Dial: func() (net.Conn, error) {
@@ -47,24 +53,11 @@ var runElectrumCmd = &cobra.Command{
 			PingInterval:    -1,
 			SoftwareVersion: "testclient",
 		})
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
 		if err == nil {
-			params := []interface{}{}
-			go func() {
-				onVaultTransaction := func(vaultTxInfo *types.VaultTxInfo, err error) {
-					log.Debug().Msgf("Received vaultTx: %v", vaultTxInfo)
-					vaultTx, err := types.NewVaultTransactionFromInfo(vaultTxInfo)
-					if err != nil {
-						log.Error().Err(err).Msgf("Failed to create vault transaction from info: %v", vaultTxInfo)
-						return
-					}
-					vaultTxCh <- vaultTx
-				}
-				client.VaultTransactionSubscribe(ctx, onVaultTransaction, params)
-			}()
-		}
+			// delay starting the electrum client until the unix socket is ready and there is some connected client
+			go startElectrumClient(ctx, client, unixSocketServer, vaultTxCh, lastVaultTx)
 
+		}
 		// Setup signal handling
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
@@ -79,4 +72,37 @@ var runElectrumCmd = &cobra.Command{
 		}
 
 	},
+}
+
+// Waiting for first client to connect before subscribing to vault transactions
+func startElectrumClient(ctx context.Context, client *electrum.Client, socketServer *socket.UnixSocketServer, vaultTxCh chan<- *types.VaultTransaction, lastVaultTx string) {
+	for {
+		if socketServer.ConnectionCount() > 0 {
+			params := []interface{}{}
+			if lastVaultTx != "" {
+				params = append(params, lastVaultTx)
+			}
+			go func() {
+				onVaultTransaction := func(vaultTxInfo *types.VaultTxInfo, err error) {
+					if err != nil {
+						log.Error().Err(err).Msg("Failed to receive vault transaction")
+						return
+					}
+					log.Debug().Msgf("Received vaultTx: %v", vaultTxInfo.Key)
+					vaultTx, err := types.NewVaultTransactionFromInfo(vaultTxInfo)
+					if err != nil {
+						log.Error().Err(err).Msgf("Failed to create vault transaction from info: %v", vaultTxInfo)
+						return
+					}
+					vaultTxCh <- vaultTx
+				}
+				log.Debug().Msgf("Subscribing to vault transactions with params: %v", params)
+				client.VaultTransactionSubscribe(ctx, onVaultTransaction, params...)
+			}()
+			break
+		} else {
+			log.Debug().Msg("No connected clients, skipping vault transaction subscription")
+			time.Sleep(time.Second)
+		}
+	}
 }

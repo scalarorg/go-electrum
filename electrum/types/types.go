@@ -64,6 +64,7 @@ type VaultTxInfo struct {
 	DestContractAddress  []byte `json:"destination_contract_address"`
 	DestRecipientAddress []byte `json:"destination_recipient_address"`
 	Timestamp            int64  `json:"timestamp"`
+	Key                  string `json:"key"`
 	TxContent            string `json:"tx_content"`
 }
 
