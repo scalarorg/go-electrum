@@ -58,8 +58,8 @@ type VaultTxInfo struct {
 	TxHash               string `json:"txid"`
 	TxPosition           int32  `json:"tx_position"`
 	Amount               int64  `json:"amount"`
-	SenderAddress        string `json:"sender_address"`
-	SenderPubkey         string `json:"sender_pubkey"`
+	StakerAddress        string `json:"staker_address"`
+	StakerPubkey         string `json:"staker_pubkey"`
 	DestChainId          []byte `json:"destination_chain_id"`
 	DestContractAddress  []byte `json:"destination_contract_address"`
 	DestRecipientAddress []byte `json:"destination_recipient_address"`
@@ -73,8 +73,8 @@ type VaultTransaction struct {
 	TxHash               string `json:"txid"`
 	TxPosition           int32  `json:"tx_position"`
 	Amount               int64  `json:"amount"`
-	SenderAddress        string `json:"sender_address"`
-	SenderPubkey         string `json:"sender_pubkey"`
+	StakerAddress        string `json:"staker_address"`
+	StakerPubkey         string `json:"staker_pubkey"`
 	DestChainId          uint64 `json:"destination_chain_id"`
 	DestContractAddress  string `json:"destination_contract_address"`
 	DestRecipientAddress string `json:"destination_recipient_address"`
@@ -121,8 +121,8 @@ func NewVaultTransactionFromInfo(info *VaultTxInfo) (*VaultTransaction, error) {
 		TxHash:        info.TxHash,
 		TxPosition:    info.TxPosition,
 		Amount:        info.Amount,
-		SenderAddress: info.SenderAddress,
-		SenderPubkey:  info.SenderPubkey,
+		StakerAddress: info.StakerAddress,
+		StakerPubkey:  info.StakerPubkey,
 		Timestamp:     info.Timestamp,
 		TxContent:     info.TxContent,
 	}

@@ -45,19 +45,9 @@ var runElectrumCmd = &cobra.Command{
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		client, err := electrum.Connect(&electrum.Options{
-			Dial: func() (net.Conn, error) {
-				return net.DialTimeout("tcp", rpcServer, time.Second)
-			},
-			MethodTimeout:   time.Second,
-			PingInterval:    -1,
-			SoftwareVersion: "testclient",
-		})
-		if err == nil {
-			// delay starting the electrum client until the unix socket is ready and there is some connected client
-			go startElectrumClient(ctx, client, unixSocketServer, vaultTxCh, lastVaultTx)
+		// delay starting the electrum client until the unix socket is ready and there is some connected client
+		go startElectrumClient(ctx, rpcServer, unixSocketServer, vaultTxCh, lastVaultTx)
 
-		}
 		// Setup signal handling
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
@@ -75,12 +65,24 @@ var runElectrumCmd = &cobra.Command{
 }
 
 // Waiting for first client to connect before subscribing to vault transactions
-func startElectrumClient(ctx context.Context, client *electrum.Client, socketServer *socket.UnixSocketServer, vaultTxCh chan<- *types.VaultTransaction, lastVaultTx string) {
+func startElectrumClient(ctx context.Context, rpcServer string, socketServer *socket.UnixSocketServer, vaultTxCh chan<- *types.VaultTransaction, lastVaultTx string) {
 	for {
 		if socketServer.ConnectionCount() > 0 {
 			params := []interface{}{}
 			if lastVaultTx != "" {
 				params = append(params, lastVaultTx)
+			}
+			client, err := electrum.Connect(&electrum.Options{
+				Dial: func() (net.Conn, error) {
+					return net.DialTimeout("tcp", rpcServer, time.Second)
+				},
+				MethodTimeout:   time.Second,
+				PingInterval:    -1,
+				SoftwareVersion: "testclient",
+			})
+			if err != nil {
+				log.Error().Err(err).Msgf("Failed to connect to electrum server at %s", rpcServer)
+				return
 			}
 			go func() {
 				onVaultTransaction := func(vaultTxInfo *types.VaultTxInfo, err error) {
@@ -88,12 +90,14 @@ func startElectrumClient(ctx context.Context, client *electrum.Client, socketSer
 						log.Error().Err(err).Msg("Failed to receive vault transaction")
 						return
 					}
-					log.Debug().Msgf("Received vaultTx: %v", vaultTxInfo.Key)
+					log.Debug().Msgf("Received vaultTx staker address: %v", vaultTxInfo.StakerAddress)
+					log.Debug().Msgf("Received vaultTx key: %v", vaultTxInfo.Key)
 					vaultTx, err := types.NewVaultTransactionFromInfo(vaultTxInfo)
 					if err != nil {
 						log.Error().Err(err).Msgf("Failed to create vault transaction from info: %v", vaultTxInfo)
 						return
 					}
+					log.Debug().Msgf("Send vaultTx staker pubkey: %v", vaultTx.StakerPubkey)
 					vaultTxCh <- vaultTx
 				}
 				log.Debug().Msgf("Subscribing to vault transactions with params: %v", params)
