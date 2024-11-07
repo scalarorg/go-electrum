@@ -135,11 +135,11 @@ func (s *UnixSocketServer) handleConnection(conn net.Conn) error {
 				}
 
 				// Set write deadline
-				if err := conn.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
-					log.Error().Err(err).Msg("failed to set write deadline")
-					s.removeConnection(conn)
-					return
-				}
+				// if err := conn.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
+				// 	log.Error().Err(err).Msg("failed to set write deadline")
+				// 	s.removeConnection(conn)
+				// 	return
+				// }
 
 				if _, err := conn.Write(pingBytes); err != nil {
 					log.Error().Err(err).Msg("failed to write ping message")
@@ -186,10 +186,10 @@ func (s *UnixSocketServer) handleConnection(conn net.Conn) error {
 				continue
 			}
 
-			if err := conn.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
-				log.Error().Err(err).Msg("failed to set write deadline")
-				return err
-			}
+			// if err := conn.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
+			// 	log.Error().Err(err).Msg("failed to set write deadline")
+			// 	return err
+			// }
 
 			if _, err := conn.Write(responseBytes); err != nil {
 				log.Error().Err(err).Msg("failed to write pong message")
