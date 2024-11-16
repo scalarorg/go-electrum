@@ -1,6 +1,6 @@
 module github.com/scalarorg/go-electrum
 
-go 1.21.6
+go 1.23.3
 
 require (
 	github.com/spf13/viper v1.19.0

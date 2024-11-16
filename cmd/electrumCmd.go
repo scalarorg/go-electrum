@@ -66,47 +66,37 @@ var runElectrumCmd = &cobra.Command{
 
 // Waiting for first client to connect before subscribing to vault transactions
 func startElectrumClient(ctx context.Context, rpcServer string, socketServer *socket.UnixSocketServer, vaultTxCh chan<- *types.VaultTransaction, lastVaultTx string) {
-	for {
-		if socketServer.ConnectionCount() > 0 {
-			params := []interface{}{}
-			if lastVaultTx != "" {
-				params = append(params, lastVaultTx)
-			}
-			client, err := electrum.Connect(&electrum.Options{
-				Dial: func() (net.Conn, error) {
-					return net.DialTimeout("tcp", rpcServer, time.Second)
-				},
-				MethodTimeout:   time.Second,
-				PingInterval:    -1,
-				SoftwareVersion: "testclient",
-			})
-			if err != nil {
-				log.Error().Err(err).Msgf("Failed to connect to electrum server at %s", rpcServer)
-				return
-			}
-			go func() {
-				onVaultTransaction := func(vaultTxInfo *types.VaultTxInfo, err error) {
-					if err != nil {
-						log.Error().Err(err).Msg("Failed to receive vault transaction")
-						return
-					}
-					log.Debug().Msgf("Received vaultTx staker address: %v", vaultTxInfo.StakerAddress)
-					log.Debug().Msgf("Received vaultTx key: %v", vaultTxInfo.Key)
-					vaultTx, err := types.NewVaultTransactionFromInfo(vaultTxInfo)
-					if err != nil {
-						log.Error().Err(err).Msgf("Failed to create vault transaction from info: %v", vaultTxInfo)
-						return
-					}
-					log.Debug().Msgf("Send vaultTx staker pubkey: %v", vaultTx.StakerPubkey)
-					vaultTxCh <- vaultTx
-				}
-				log.Debug().Msgf("Subscribing to vault transactions with params: %v", params)
-				client.VaultTransactionSubscribe(ctx, onVaultTransaction, params...)
-			}()
-			break
-		} else {
-			log.Debug().Msg("No connected clients, skipping vault transaction subscription")
-			time.Sleep(time.Second)
-		}
+	params := []interface{}{10}
+	if lastVaultTx != "" {
+		params = append(params, lastVaultTx)
 	}
+	client, err := electrum.Connect(&electrum.Options{
+		Dial: func() (net.Conn, error) {
+			return net.DialTimeout("tcp", rpcServer, time.Second)
+		},
+		MethodTimeout:   time.Second,
+		PingInterval:    -1,
+		SoftwareVersion: "testclient",
+	})
+	if err != nil {
+		log.Error().Err(err).Msgf("Failed to connect to electrum server at %s", rpcServer)
+		return
+	}
+	go func() {
+		onVaultTransaction := func(vaultTxs []types.VaultTransaction, err error) error {
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to receive vault transaction")
+				return err
+			}
+			for _, vaultTx := range vaultTxs {
+				log.Debug().Msgf("Received vaultTx staker address: %v", vaultTx.StakerAddress)
+				log.Debug().Msgf("Received vaultTx key: %v", vaultTx.Key)
+				log.Debug().Msgf("Send vaultTx staker pubkey: %v", vaultTx.StakerPubkey)
+				vaultTxCh <- &vaultTx
+			}
+			return nil
+		}
+		log.Debug().Msgf("Subscribing to vault transactions with params: %v", params)
+		client.VaultTransactionSubscribe(ctx, onVaultTransaction, params...)
+	}()
 }

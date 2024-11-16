@@ -459,17 +459,13 @@ func (c *Client) VaultTransactionsGetFrom(ctx context.Context, txHash string, le
 	return response, nil
 }
 
-func (c *Client) VaultTransactionSubscribe(ctx context.Context, result func(vault_tx *types.VaultTxInfo, err error), params ...interface{}) {
+func (c *Client) VaultTransactionSubscribe(ctx context.Context,
+	result func(vaultTxs []types.VaultTransaction, err error) error,
+	params ...interface{}) {
 	c.registerNotification("vault.transactions.subscribe", func(params json.RawMessage) {
-		// log.Debug().Msgf("Received raw message: %v", params)
-		var h [1]types.VaultTxInfo
-		err := json.Unmarshal(params, &h)
-		if err != nil {
-			log.Error().Msgf("Try to unmarshal as VaultTxInfo: %v", err)
-			result(nil, err)
-			return
-		}
-		result(&h[0], nil)
+		log.Trace().Msgf("Handle vault data in notification message: %d bytes", len(params))
+		txs, err := parseResponse(params)
+		result(txs, err)
 	})
 	ctx, cancel := c.timeoutCtx(ctx)
 	err := c.rpc.Method(
@@ -480,13 +476,9 @@ func (c *Client) VaultTransactionSubscribe(ctx context.Context, result func(vaul
 				result(nil, err)
 				return
 			}
-			var h types.VaultTxInfo
-			if err := json.Unmarshal(responseBytes, &h); err != nil {
-				log.Error().Msgf("Error in VaultTransactionSubscribe: %v", err)
-				result(nil, err)
-				return
-			}
-			result(&h, nil)
+			log.Trace().Msgf("Handle vault data in notification message: %d bytes", len(responseBytes))
+			txs, err := parseResponse(responseBytes)
+			result(txs, err)
 		},
 		"vault.transactions.subscribe",
 		params...)
@@ -501,4 +493,13 @@ func (c *Client) VaultTransactionSubscribe(ctx context.Context, result func(vaul
 func (c *Client) Close() {
 	close(c.quitCh)
 	c.rpc.Close()
+}
+
+func parseResponse(responseBytes []byte) ([]types.VaultTransaction, error) {
+	var txs []types.VaultTransaction
+	if err := json.Unmarshal(responseBytes, &txs); err != nil {
+		log.Error().Msgf("Error while parsing vaultTx data from server: %v", err)
+		return nil, err
+	}
+	return txs, nil
 }

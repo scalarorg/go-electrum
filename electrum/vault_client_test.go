@@ -28,8 +28,9 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+// Before running the test, you need to start the electrum server:
+// Todo: build a docker image for btc regtest and electrum server
 // const electrsRpcServer = "electrs4.btc.scalar.org:80"
-
 // const electrsRpcServer = "192.168.1.254:60001"
 // const electrsRpcServer = "18.140.72.123:60001"
 const electrsRpcServer = "127.0.0.1:60001"
@@ -124,11 +125,13 @@ func (s *vaultClientTestsuite) TestVaultTransactionSubscribe() {
 	receivedVaultTxCh := make(chan *types.VaultTransaction)
 	params := []interface{}{}
 	go func() {
-		onVaultTransaction := func(vaultTxInfo *types.VaultTxInfo, err error) {
+		onVaultTransaction := func(vaultTxs []types.VaultTransaction, err error) error {
 			require.NoError(s.T(), err)
-			vaultTx, err := types.NewVaultTransactionFromInfo(vaultTxInfo)
-			require.NoError(s.T(), err)
-			receivedVaultTxCh <- vaultTx
+			for _, vaultTx := range vaultTxs {
+				log.Info().Msgf("vaultTx: %v", vaultTx)
+				receivedVaultTxCh <- &vaultTx
+			}
+			return nil
 		}
 		s.client.VaultTransactionSubscribe(ctx, onVaultTransaction, params)
 	}()

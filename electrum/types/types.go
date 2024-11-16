@@ -53,11 +53,13 @@ func (history TxHistory) Status() string {
 type Header struct {
 	Height int `json:"height"`
 }
+
+// Deprecated: Server returns VaultTransaction directly, don't use this type for temporary storage.
 type VaultTxInfo struct {
 	Height               int    `json:"confirmed_height"`
 	TxHash               string `json:"txid"`
-	TxPosition           int32  `json:"tx_position"`
-	Amount               int64  `json:"amount"`
+	TxPosition           int    `json:"tx_position"`
+	Amount               uint64 `json:"amount"`
 	StakerAddress        string `json:"staker_address"`
 	StakerPubkey         string `json:"staker_pubkey"`
 	DestChainId          []byte `json:"destination_chain_id"`
@@ -71,14 +73,15 @@ type VaultTxInfo struct {
 type VaultTransaction struct {
 	Height               int    `json:"confirmed_height"`
 	TxHash               string `json:"txid"`
-	TxPosition           int32  `json:"tx_position"`
-	Amount               int64  `json:"amount"`
+	TxPosition           int    `json:"tx_position"`
+	Amount               uint64 `json:"amount"`
 	StakerAddress        string `json:"staker_address"`
 	StakerPubkey         string `json:"staker_pubkey"`
 	DestChainId          uint64 `json:"destination_chain_id"`
 	DestContractAddress  string `json:"destination_contract_address"`
 	DestRecipientAddress string `json:"destination_recipient_address"`
 	Timestamp            int64  `json:"timestamp"`
+	Key                  string `json:"key"`
 	TxContent            string `json:"tx_content"`
 }
 
