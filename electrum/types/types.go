@@ -17,7 +17,6 @@ package types
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -55,20 +54,20 @@ type Header struct {
 }
 
 // Deprecated: Server returns VaultTransaction directly, don't use this type for temporary storage.
-type VaultTxInfo struct {
-	Height               int    `json:"confirmed_height"`
-	TxHash               string `json:"txid"`
-	TxPosition           int    `json:"tx_position"`
-	Amount               uint64 `json:"amount"`
-	StakerAddress        string `json:"staker_address"`
-	StakerPubkey         string `json:"staker_pubkey"`
-	DestChainId          []byte `json:"destination_chain_id"`
-	DestContractAddress  []byte `json:"destination_contract_address"`
-	DestRecipientAddress []byte `json:"destination_recipient_address"`
-	Timestamp            int64  `json:"timestamp"`
-	Key                  string `json:"key"`
-	TxContent            string `json:"tx_content"`
-}
+// type VaultTxInfo struct {
+// 	Height               int    `json:"confirmed_height"`
+// 	TxHash               string `json:"txid"`
+// 	TxPosition           int    `json:"tx_position"`
+// 	Amount               uint64 `json:"amount"`
+// 	StakerAddress        string `json:"staker_address"`
+// 	StakerPubkey         string `json:"staker_pubkey"`
+// 	DestChain            []byte `json:"destination_chain"`
+// 	DestContractAddress  []byte `json:"destination_contract_address"`
+// 	DestRecipientAddress []byte `json:"destination_recipient_address"`
+// 	Timestamp            int64  `json:"timestamp"`
+// 	Key                  string `json:"key"`
+// 	TxContent            string `json:"tx_content"`
+// }
 
 type VaultTransaction struct {
 	Height               int    `json:"confirmed_height"`
@@ -77,7 +76,7 @@ type VaultTransaction struct {
 	Amount               uint64 `json:"amount"`
 	StakerAddress        string `json:"staker_address"`
 	StakerPubkey         string `json:"staker_pubkey"`
-	DestChainId          uint64 `json:"destination_chain_id"`
+	DestChain            uint64 `json:"destination_chain"`
 	DestContractAddress  string `json:"destination_contract_address"`
 	DestRecipientAddress string `json:"destination_recipient_address"`
 	Timestamp            int64  `json:"timestamp"`
@@ -114,36 +113,36 @@ func (tx *VaultTransaction) Marshal() ([]byte, error) {
 // }
 
 // NewVaultTransactionFromInfo creates a new VaultTransaction from VaultTxInfo
-func NewVaultTransactionFromInfo(info *VaultTxInfo) (*VaultTransaction, error) {
-	if info == nil {
-		return nil, fmt.Errorf("VaultTxInfo is nil")
-	}
+// func NewVaultTransactionFromInfo(info *VaultTxInfo) (*VaultTransaction, error) {
+// 	if info == nil {
+// 		return nil, fmt.Errorf("VaultTxInfo is nil")
+// 	}
 
-	tx := &VaultTransaction{
-		Height:        info.Height,
-		TxHash:        info.TxHash,
-		TxPosition:    info.TxPosition,
-		Amount:        info.Amount,
-		StakerAddress: info.StakerAddress,
-		StakerPubkey:  info.StakerPubkey,
-		Timestamp:     info.Timestamp,
-		TxContent:     info.TxContent,
-	}
+// 	tx := &VaultTransaction{
+// 		Height:        info.Height,
+// 		TxHash:        info.TxHash,
+// 		TxPosition:    info.TxPosition,
+// 		Amount:        info.Amount,
+// 		StakerAddress: info.StakerAddress,
+// 		StakerPubkey:  info.StakerPubkey,
+// 		Timestamp:     info.Timestamp,
+// 		TxContent:     info.TxContent,
+// 	}
 
-	// Convert DestChainId from []byte to int64
-	if len(info.DestChainId) > 0 {
-		tx.DestChainId = uint64(binary.BigEndian.Uint64(info.DestChainId))
-	}
+// 	// Convert DestChainId from []byte to int64
+// 	if len(info.DestChain) > 0 {
+// 		tx.DestChain = uint64(binary.BigEndian.Uint64(info.DestChain))
+// 	}
 
-	// Convert DestChainHash to hex string
-	if len(info.DestContractAddress) > 0 {
-		tx.DestContractAddress = hex.EncodeToString(info.DestContractAddress)
-	}
+// 	// Convert DestChainHash to hex string
+// 	if len(info.DestContractAddress) > 0 {
+// 		tx.DestContractAddress = hex.EncodeToString(info.DestContractAddress)
+// 	}
 
-	// Convert DestAddress to hex string
-	if len(info.DestRecipientAddress) > 0 {
-		tx.DestRecipientAddress = hex.EncodeToString(info.DestRecipientAddress)
-	}
+// 	// Convert DestAddress to hex string
+// 	if len(info.DestRecipientAddress) > 0 {
+// 		tx.DestRecipientAddress = hex.EncodeToString(info.DestRecipientAddress)
+// 	}
 
-	return tx, nil
-}
+// 	return tx, nil
+// }
