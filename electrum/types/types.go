@@ -76,8 +76,11 @@ type VaultTransaction struct {
 	Amount               uint64 `json:"amount"`
 	StakerAddress        string `json:"staker_address"`
 	StakerPubkey         string `json:"staker_pubkey"`
+	CovenantQuorum       uint8  `json:"covenant_quorum"`
+	ServiceTag           []byte `json:"service_tag"`
+	VaultTxType          uint8  `json:"vault_tx_type"`
 	DestChain            uint64 `json:"destination_chain"`
-	DestContractAddress  string `json:"destination_contract_address"`
+	DestTokenAddress     string `json:"destination_token_address"`
 	DestRecipientAddress string `json:"destination_recipient_address"`
 	Timestamp            int64  `json:"timestamp"`
 	Key                  string `json:"key"`
