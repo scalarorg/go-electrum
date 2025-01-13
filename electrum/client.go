@@ -464,7 +464,7 @@ func (c *Client) VaultTransactionSubscribe(ctx context.Context,
 	params ...interface{}) {
 	c.registerNotification("vault.transactions.subscribe", func(params json.RawMessage) {
 		log.Trace().Msgf("Handle vault data in notification message: %d bytes", len(params))
-		txs, err := parseResponse(params)
+		txs, err := parseVaultTxsResponse(params)
 		result(txs, err)
 	})
 	ctx, cancel := c.timeoutCtx(ctx)
@@ -477,13 +477,48 @@ func (c *Client) VaultTransactionSubscribe(ctx context.Context,
 				return
 			}
 			log.Trace().Msgf("Handle vault data in notification message: %d bytes", len(responseBytes))
-			txs, err := parseResponse(responseBytes)
+			txs, err := parseVaultTxsResponse(responseBytes)
 			result(txs, err)
 		},
 		"vault.transactions.subscribe",
 		params...)
 	if err != nil {
 		log.Error().Msgf("Error in VaultTransactionSubscribe: %v", err)
+		result(nil, err)
+	}
+}
+
+func (c *Client) BlockchainHeaderSubscribe(ctx context.Context,
+	result func(chainHeader *types.BlockchainHeader, err error) error,
+	params ...interface{}) {
+	c.registerNotification("blockchain.headers.subscribe", func(params json.RawMessage) {
+		log.Trace().Msgf("Handle blockchain header data in notification message: %d bytes", len(params))
+		headers, err := parseBlockchainHeadersResponse(params)
+		if err != nil {
+			result(nil, err)
+			return
+		} else if len(headers) > 0 {
+			result(&headers[0], nil)
+			return
+		}
+	})
+	ctx, cancel := c.timeoutCtx(ctx)
+	err := c.rpc.Method(
+		ctx,
+		func(responseBytes []byte, err error) {
+			defer cancel()
+			if err != nil {
+				result(nil, err)
+				return
+			}
+			log.Trace().Msgf("Handle blockchain header data in notification message: %d bytes", len(responseBytes))
+			header, err := parseBlockchainHeaderResponse(responseBytes)
+			result(header, err)
+		},
+		"blockchain.headers.subscribe",
+		params...)
+	if err != nil {
+		log.Error().Msgf("Error in BlockchainHeaderSubscribe: %v", err)
 		result(nil, err)
 	}
 }
@@ -495,7 +530,25 @@ func (c *Client) Close() {
 	c.rpc.Close()
 }
 
-func parseResponse(responseBytes []byte) ([]types.VaultTransaction, error) {
+func parseBlockchainHeaderResponse(responseBytes []byte) (*types.BlockchainHeader, error) {
+	var chainHeader types.BlockchainHeader
+	if err := json.Unmarshal(responseBytes, &chainHeader); err != nil {
+		log.Error().Msgf("Error while parsing vaultTx data from server: %v", err)
+		return nil, err
+	}
+	return &chainHeader, nil
+}
+
+func parseBlockchainHeadersResponse(responseBytes []byte) ([]types.BlockchainHeader, error) {
+	var chainHeaders []types.BlockchainHeader
+	if err := json.Unmarshal(responseBytes, &chainHeaders); err != nil {
+		log.Error().Msgf("Error while parsing vaultTx data from server: %v", err)
+		return nil, err
+	}
+	return chainHeaders, nil
+}
+
+func parseVaultTxsResponse(responseBytes []byte) ([]types.VaultTransaction, error) {
 	var txs []types.VaultTransaction
 	if err := json.Unmarshal(responseBytes, &txs); err != nil {
 		log.Error().Msgf("Error while parsing vaultTx data from server: %v", err)

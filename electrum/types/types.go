@@ -53,21 +53,10 @@ type Header struct {
 	Height int `json:"height"`
 }
 
-// Deprecated: Server returns VaultTransaction directly, don't use this type for temporary storage.
-// type VaultTxInfo struct {
-// 	Height               int    `json:"confirmed_height"`
-// 	TxHash               string `json:"txid"`
-// 	TxPosition           int    `json:"tx_position"`
-// 	Amount               uint64 `json:"amount"`
-// 	StakerAddress        string `json:"staker_address"`
-// 	StakerPubkey         string `json:"staker_pubkey"`
-// 	DestChain            []byte `json:"destination_chain"`
-// 	DestContractAddress  []byte `json:"destination_contract_address"`
-// 	DestRecipientAddress []byte `json:"destination_recipient_address"`
-// 	Timestamp            int64  `json:"timestamp"`
-// 	Key                  string `json:"key"`
-// 	TxContent            string `json:"tx_content"`
-// }
+type BlockchainHeader struct {
+	Hex    string `json:"hex"`    //Header hex
+	Height int    `json:"height"` //Height of the block
+}
 
 type VaultTransaction struct {
 	Height               int    `json:"confirmed_height"`
