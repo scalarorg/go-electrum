@@ -72,7 +72,7 @@ type VaultTransaction struct {
 	DestTokenAddress     string `json:"destination_token_address"`
 	DestRecipientAddress string `json:"destination_recipient_address"`
 	SessionSequence      uint64 `json:"session_sequence"` //For redeem session
-	CustodianGroupUid    string `json:"custodian_group_uid"`
+	CustodianGroupUid    []byte `json:"custodian_group_uid"`
 	Timestamp            int64  `json:"timestamp"`
 	Key                  string `json:"key"`
 	TxContent            string `json:"tx_content"`
