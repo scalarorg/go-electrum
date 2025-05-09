@@ -17,9 +17,12 @@ package types
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+
+	"github.com/rs/zerolog/log"
 )
 
 // TxInfo is returned by ScriptHashGetHistory.
@@ -53,9 +56,41 @@ type Header struct {
 	Height int `json:"height"`
 }
 
-type BlockchainHeader struct {
-	Hex    string `json:"hex"`    //Header hex
+type HeaderEntry struct {
+	Hex    string `json:"hex"` //Header hex
+	Hash   string `json:"hash"`
 	Height int    `json:"height"` //Height of the block
+}
+type BlockchainHeader struct {
+	Version       int32  `json:"version"`
+	PrevBlockhash []byte `json:"prev_blockhash"`
+	MerkleRoot    []byte `json:"MerkleRoot"`
+	Time          uint32 `json:"time"`
+	CompactTarget uint32 `json:"compact_target"`
+	Nonce         uint32 `json:"nonce"`
+	Hash          string `json:"hash"`
+	Height        int    `json:"height"` //Height of the block
+}
+
+func ParseHeaderEntry(headerEntry *HeaderEntry) BlockchainHeader {
+	bytes, err := hex.DecodeString(headerEntry.Hex)
+	if err != nil {
+		log.Error().Err(err).Str("Hex", headerEntry.Hex).Msg("Cannot decode header hex")
+	}
+	version := binary.LittleEndian.Uint32(bytes[0:4])
+	time := binary.LittleEndian.Uint32(bytes[68:72])
+	compactTarget := binary.LittleEndian.Uint32(bytes[72:76])
+	nonce := binary.LittleEndian.Uint32(bytes[76:80])
+	return BlockchainHeader{
+		Version:       int32(version),
+		PrevBlockhash: bytes[4:36],
+		MerkleRoot:    bytes[36:68],
+		Time:          time,
+		CompactTarget: compactTarget,
+		Nonce:         nonce,
+		Hash:          headerEntry.Hash,
+		Height:        headerEntry.Height,
+	}
 }
 
 type VaultTransaction struct {

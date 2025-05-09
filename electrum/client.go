@@ -531,19 +531,24 @@ func (c *Client) Close() {
 }
 
 func parseBlockchainHeaderResponse(responseBytes []byte) (*types.BlockchainHeader, error) {
-	var chainHeader types.BlockchainHeader
-	if err := json.Unmarshal(responseBytes, &chainHeader); err != nil {
+	var header types.HeaderEntry
+	if err := json.Unmarshal(responseBytes, &header); err != nil {
 		log.Error().Msgf("Error while parsing blockchain header from server: %v", err)
 		return nil, err
 	}
+	chainHeader := types.ParseHeaderEntry(&header)
 	return &chainHeader, nil
 }
 
 func parseBlockchainHeadersResponse(responseBytes []byte) ([]types.BlockchainHeader, error) {
-	var chainHeaders []types.BlockchainHeader
-	if err := json.Unmarshal(responseBytes, &chainHeaders); err != nil {
+	var headers []types.HeaderEntry
+	if err := json.Unmarshal(responseBytes, &headers); err != nil {
 		log.Error().Msgf("Error while parsing blockchain header from server: %v", err)
 		return nil, err
+	}
+	chainHeaders := make([]types.BlockchainHeader, len(headers))
+	for ind, entry := range headers {
+		chainHeaders[ind] = types.ParseHeaderEntry(&entry)
 	}
 	return chainHeaders, nil
 }
