@@ -95,6 +95,7 @@ func ParseHeaderEntry(headerEntry *HeaderEntry) BlockchainHeader {
 
 type VaultTransaction struct {
 	Height               int    `json:"confirmed_height"`
+	BlockHash            string `json:"block_hash"`
 	TxHash               string `json:"txid"`
 	TxPosition           int    `json:"tx_position"`
 	Amount               uint64 `json:"amount"`
