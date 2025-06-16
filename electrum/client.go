@@ -223,6 +223,34 @@ func (c *Client) negotiateProtocol() (ServerVersion, error) {
 	return ServerVersion{software: resp[0], protocol: resp[1]}, nil
 }
 
+func (c *Client) CallRpcBlockingMethod(ctx context.Context, response interface{}, method string, params ...interface{}) error {
+	ctx, cancel := c.timeoutCtx(ctx)
+	defer cancel()
+	err := c.rpc.MethodBlocking(ctx, response, method, params...)
+	if err != nil {
+		log.Error().Msgf("Error in CallRpcMethod: %v", err)
+		return err
+	}
+	return nil
+}
+func (c *Client) CallRpcMethod(ctx context.Context, onResponse func(response []byte, err error), method string, params ...interface{}) error {
+	ctx, cancel := c.timeoutCtx(ctx)
+	defer cancel()
+	err := c.rpc.Method(ctx, onResponse, method, params...)
+	if err != nil {
+		log.Error().Msgf("Error in CallRpcMethod: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (c *Client) SubscribeEvent(ctx context.Context, method string, handler func(params json.RawMessage, err error), getfirst bool) error {
+	c.registerNotification(method, func(params json.RawMessage) {
+		handler(params, nil)
+	})
+	return nil
+}
+
 // ScriptHashGetHistory does the blockchain.scripthash.get_history RPC call.
 func (c *Client) ScriptHashGetHistory(ctx context.Context, scriptHashHex string) (types.TxHistory, error) {
 	txs := types.TxHistory{}
