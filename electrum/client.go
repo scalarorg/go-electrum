@@ -244,10 +244,24 @@ func (c *Client) CallRpcMethod(ctx context.Context, onResponse func(response []b
 	return nil
 }
 
-func (c *Client) SubscribeEvent(ctx context.Context, method string, handler func(params json.RawMessage, err error), getfirst bool) error {
+func (c *Client) SubscribeEvent(ctx context.Context,
+	method string,
+	handler func(params json.RawMessage, err error),
+	params ...interface{}) error {
 	c.registerNotification(method, func(params json.RawMessage) {
+		log.Info().Msg("Handle notification message")
 		handler(params, nil)
 	})
+	ctx, cancel := c.timeoutCtx(ctx)
+	err := c.rpc.Method(ctx, func(responseBytes []byte, err error) {
+		defer cancel()
+		log.Info().Msgf("Handle response message: %d bytes", len(responseBytes))
+		handler(responseBytes, err)
+	}, method, params...)
+	if err != nil {
+		log.Error().Msgf("Error in SubscribeEvent: %v", err)
+		return err
+	}
 	return nil
 }
 

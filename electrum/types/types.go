@@ -119,61 +119,13 @@ func (tx *VaultTransaction) Marshal() ([]byte, error) {
 	return json.Marshal(tx)
 }
 
-// func (tx *VaultTransaction) Unmarshal(data []byte) error {
-// 	var raw VaultTxInfo
-// 	log.Debug().Msgf("Unmarshalling vault transaction: %s", string(data))
-// 	if err := json.Unmarshal(data, &raw); err != nil {
-// 		log.Error().Err(err).Msgf("Failed to unmarshal vault transaction: %s", string(data))
-// 		return err
-// 	}
-
-// 	// Copy the simple fields
-// 	tx.Height = raw.Height
-// 	tx.TxHash = raw.TxHash
-// 	tx.TxPosition = raw.TxPosition
-// 	tx.Amount = raw.Amount
-// 	tx.SenderAddress = raw.SenderAddress
-// 	tx.SenderPubkey = raw.SenderPubkey
-// 	tx.DestChainId = uint64(binary.BigEndian.Uint64(raw.DestChainId))
-// 	tx.DestContractAddress = hex.EncodeToString(raw.DestContractAddress)
-// 	tx.DestRecipientAddress = hex.EncodeToString(raw.DestRecipientAddress)
-// 	tx.Timestamp = raw.Timestamp
-// 	tx.TxContent = raw.TxContent
-
-// 	return nil
-// }
-
-// NewVaultTransactionFromInfo creates a new VaultTransaction from VaultTxInfo
-// func NewVaultTransactionFromInfo(info *VaultTxInfo) (*VaultTransaction, error) {
-// 	if info == nil {
-// 		return nil, fmt.Errorf("VaultTxInfo is nil")
-// 	}
-
-// 	tx := &VaultTransaction{
-// 		Height:        info.Height,
-// 		TxHash:        info.TxHash,
-// 		TxPosition:    info.TxPosition,
-// 		Amount:        info.Amount,
-// 		StakerAddress: info.StakerAddress,
-// 		StakerPubkey:  info.StakerPubkey,
-// 		Timestamp:     info.Timestamp,
-// 		TxContent:     info.TxContent,
-// 	}
-
-// 	// Convert DestChainId from []byte to int64
-// 	if len(info.DestChain) > 0 {
-// 		tx.DestChain = uint64(binary.BigEndian.Uint64(info.DestChain))
-// 	}
-
-// 	// Convert DestChainHash to hex string
-// 	if len(info.DestContractAddress) > 0 {
-// 		tx.DestContractAddress = hex.EncodeToString(info.DestContractAddress)
-// 	}
-
-// 	// Convert DestAddress to hex string
-// 	if len(info.DestRecipientAddress) > 0 {
-// 		tx.DestRecipientAddress = hex.EncodeToString(info.DestRecipientAddress)
-// 	}
-
-// 	return tx, nil
-// }
+type VaultTx struct {
+	RawTx  []byte           `json:"raw_tx"`
+	TxInfo VaultTransaction `json:"tx_info"`
+	Proof  []string         `json:"proof"`
+}
+type VaultBlock struct {
+	Hash     string    `json:"hash"`
+	Height   int       `json:"height"`
+	VaultTxs []VaultTx `json:"txes"`
+}

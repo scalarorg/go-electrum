@@ -1,0 +1,28 @@
+package types
+
+const (
+	BlockchainBlockHeader           = "blockchain.block.header"
+	BlockchainBlockHeaders          = "blockchain.block.headers"
+	BlockchainEstimatefee           = "blockchain.estimatefee"
+	BlockchainHeadersSubscribe      = "blockchain.headers.subscribe"
+	BlockchainRelayfee              = "blockchain.relayfee"
+	BlockchainScripthashGetBalance  = "blockchain.scripthash.get_balance"
+	BlockchainScripthashGetHistory  = "blockchain.scripthash.get_history"
+	BlockchainScripthashListunspent = "blockchain.scripthash.listunspent"
+	BlockchainScripthashSubscribe   = "blockchain.scripthash.subscribe"
+	BlockchainTransactionBroadcast  = "blockchain.transaction.broadcast"
+	BlockchainTransactionGet        = "blockchain.transaction.get"
+	BlockchainTransactionGetMerkle  = "blockchain.transaction.get_merkle"
+	BlockchainTransactionIdFromPos  = "blockchain.transaction.id_from_pos"
+	MempoolGetFeeHistogram          = "mempool.get_fee_histogram"
+	ServerBanner                    = "server.banner"
+	ServerDonationAddress           = "server.donation_address"
+	ServerPeersSubscribe            = "server.peers.subscribe"
+	ServerPing                      = "server.ping"
+	ServerVersion                   = "server.version"
+	ServerFeatures                  = "server.features"
+	ServerAddPeer                   = "server.add_peer"
+	VaultTransactionsSubscribe      = "vault.transactions.subscribe"
+	VaultBlocksSubscribe            = "vault.blocks.subscribe"
+	VaultTransactionsGet            = "vault.transactions.get"
+)

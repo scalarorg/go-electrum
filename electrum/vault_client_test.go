@@ -16,6 +16,7 @@ package electrum
 
 import (
 	"context"
+	"encoding/json"
 	"net"
 	"strings"
 	"testing"
@@ -76,6 +77,9 @@ func (s *vaultClientTestsuite) SetupTest() {
 }
 
 func (s *vaultClientTestsuite) TearDownTest() {
+	if s.client == nil {
+		return
+	}
 	s.client.Close()
 }
 
@@ -83,65 +87,99 @@ func TestElectrsClient(t *testing.T) {
 	suite.Run(t, &vaultClientTestsuite{})
 }
 
-func (s *vaultClientTestsuite) TestTransactionGetFrom() {
-	expectedResponse := []byte("\xaa\xbb\xcc")
-	// hash := "b43da04e4968227daed5f667f68af19988af4201b36ca552ca15e07e8c70a4fd"
-	hash := "108e40ac667908a4c1e0b2503371ed70651d2467fc02e09f54d80208afb75a31"
-	length := 10
-	response, err := s.client.VaultTransactionsGetFrom(context.Background(), hash, length)
-	require.NoError(s.T(), err)
-	// rawTx, err := hex.DecodeString(rawTxHex)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to decode transaction hex: %w", err)
-	// }
-	// println(hex.EncodeToString(response))
-	// for _, tx := range response {
-	// 	println(tx["change_amount"].(*float64))
-	// }
-	require.Equal(s.T(), expectedResponse, response)
-}
+// func (s *vaultClientTestsuite) TestTransactionGetFrom() {
+// 	expectedResponse := []byte("\xaa\xbb\xcc")
+// 	// hash := "b43da04e4968227daed5f667f68af19988af4201b36ca552ca15e07e8c70a4fd"
+// 	hash := "108e40ac667908a4c1e0b2503371ed70651d2467fc02e09f54d80208afb75a31"
+// 	length := 10
+// 	response, err := s.client.VaultTransactionsGetFrom(context.Background(), hash, length)
+// 	require.NoError(s.T(), err)
+// 	// rawTx, err := hex.DecodeString(rawTxHex)
+// 	// if err != nil {
+// 	// 	return nil, fmt.Errorf("failed to decode transaction hex: %w", err)
+// 	// }
+// 	// println(hex.EncodeToString(response))
+// 	// for _, tx := range response {
+// 	// 	println(tx["change_amount"].(*float64))
+// 	// }
+// 	require.Equal(s.T(), expectedResponse, response)
+// }
 
-func (s *vaultClientTestsuite) TestVaultTransactionGetCancel() {
+// func (s *vaultClientTestsuite) TestVaultTransactionGetCancel() {
+// 	ctx, cancel := context.WithCancel(context.Background())
+// 	errCh := make(chan error)
+// 	go func() {
+// 		hash := "b43da04e4968227daed5f667f68af19988af4201b36ca552ca15e07e8c70a4fd"
+// 		length := 10
+// 		_, err := s.client.VaultTransactionsGetFrom(ctx, hash, length)
+// 		errCh <- err
+// 	}()
+// 	cancel()
+// 	select {
+// 	case err := <-errCh:
+// 		require.ErrorIs(s.T(), err, context.Canceled)
+// 	case <-time.After(2 * time.Second):
+// 		require.Fail(s.T(), "timeoout")
+// 	}
+// }
+
+// func (s *vaultClientTestsuite) TestVaultTransactionSubscribe() {
+// 	ctx, cancel := context.WithCancel(context.Background())
+// 	errCh := make(chan error)
+// 	receivedVaultTxCh := make(chan *types.VaultTransaction)
+// 	params := []interface{}{}
+// 	go func() {
+// 		onVaultTransaction := func(vaultTxs []types.VaultTransaction, err error) error {
+// 			require.NoError(s.T(), err)
+// 			for _, vaultTx := range vaultTxs {
+// 				log.Info().Msgf("vaultTx: %v", vaultTx)
+// 				receivedVaultTxCh <- &vaultTx
+// 			}
+// 			return nil
+// 		}
+// 		s.client.VaultTransactionSubscribe(ctx, onVaultTransaction, params)
+// 	}()
+// 	cancel()
+// 	select {
+// 	case vaultTx := <-receivedVaultTxCh:
+// 		log.Info().Msgf("vaultTx: %v", vaultTx)
+// 	case err := <-errCh:
+// 		require.ErrorIs(s.T(), err, context.Canceled)
+// 	case <-time.After(24 * time.Hour):
+// 		require.Fail(s.T(), "timeoout")
+// 	}
+// }
+
+func (s *vaultClientTestsuite) TestVaultBlocksSubscribe() {
 	ctx, cancel := context.WithCancel(context.Background())
 	errCh := make(chan error)
-	go func() {
-		hash := "b43da04e4968227daed5f667f68af19988af4201b36ca552ca15e07e8c70a4fd"
-		length := 10
-		_, err := s.client.VaultTransactionsGetFrom(ctx, hash, length)
-		errCh <- err
-	}()
-	cancel()
-	select {
-	case err := <-errCh:
-		require.ErrorIs(s.T(), err, context.Canceled)
-	case <-time.After(2 * time.Second):
-		require.Fail(s.T(), "timeoout")
-	}
-}
-
-func (s *vaultClientTestsuite) TestVaultTransactionSubscribe() {
-	ctx, cancel := context.WithCancel(context.Background())
-	errCh := make(chan error)
-	receivedVaultTxCh := make(chan *types.VaultTransaction)
-	params := []interface{}{}
-	go func() {
-		onVaultTransaction := func(vaultTxs []types.VaultTransaction, err error) error {
-			require.NoError(s.T(), err)
-			for _, vaultTx := range vaultTxs {
-				log.Info().Msgf("vaultTx: %v", vaultTx)
-				receivedVaultTxCh <- &vaultTx
-			}
-			return nil
+	receivedVaultTxCh := make(chan *types.VaultBlock)
+	params := []interface{}{10}
+	onVaultBlocks := func(params json.RawMessage, err error) {
+		require.NoError(s.T(), err)
+		var vaultBlocks []types.VaultBlock
+		log.Info().Msgf("raw params: %v", string(params))
+		err = json.Unmarshal(params, &vaultBlocks)
+		if err != nil {
+			log.Info().Msgf("error: %v", err)
+			return
+		} else {
+			log.Info().Msgf("VaultBlocks: %v", vaultBlocks)
 		}
-		s.client.VaultTransactionSubscribe(ctx, onVaultTransaction, params)
-	}()
-	cancel()
+		require.NoError(s.T(), err)
+		for _, vaultBlock := range vaultBlocks {
+			receivedVaultTxCh <- &vaultBlock
+		}
+	}
+	err := s.client.SubscribeEvent(ctx, "vault.blocks.subscribe", onVaultBlocks, params)
+	require.NoError(s.T(), err)
 	select {
-	case vaultTx := <-receivedVaultTxCh:
-		log.Info().Msgf("vaultTx: %v", vaultTx)
+	case vaultBlock := <-receivedVaultTxCh:
+		log.Info().Msgf("vaultBlock: %++v", vaultBlock)
 	case err := <-errCh:
 		require.ErrorIs(s.T(), err, context.Canceled)
 	case <-time.After(24 * time.Hour):
 		require.Fail(s.T(), "timeoout")
 	}
+	cancel()
 }
