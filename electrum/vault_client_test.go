@@ -151,35 +151,39 @@ func TestElectrsClient(t *testing.T) {
 // }
 
 func (s *vaultClientTestsuite) TestVaultBlocksSubscribe() {
-	ctx, cancel := context.WithCancel(context.Background())
+	log.Info().Msgf("TestVaultBlocksSubscribe")
+	//ctx, cancel := context.WithCancel(context.Background())
+	ctx := context.Background()
 	errCh := make(chan error)
 	receivedVaultTxCh := make(chan *types.VaultBlock)
 	params := []interface{}{10}
 	onVaultBlocks := func(params json.RawMessage, err error) {
 		require.NoError(s.T(), err)
 		var vaultBlocks []types.VaultBlock
-		log.Info().Msgf("raw params: %v", string(params))
 		err = json.Unmarshal(params, &vaultBlocks)
 		if err != nil {
-			log.Info().Msgf("error: %v", err)
+			log.Info().Msgf("error unmarshalling params: %v, response: %v", err, string(params))
 			return
 		} else {
-			log.Info().Msgf("VaultBlocks: %v", vaultBlocks)
+			log.Info().Msgf("Unmarshalled VaultBlocks: %d", len(vaultBlocks))
 		}
 		require.NoError(s.T(), err)
 		for _, vaultBlock := range vaultBlocks {
 			receivedVaultTxCh <- &vaultBlock
 		}
 	}
-	err := s.client.SubscribeEvent(ctx, "vault.blocks.subscribe", onVaultBlocks, params)
+	err := s.client.SubscribeEvent(ctx, "vault.blocks.subscribe", onVaultBlocks, params...)
 	require.NoError(s.T(), err)
-	select {
-	case vaultBlock := <-receivedVaultTxCh:
-		log.Info().Msgf("vaultBlock: %++v", vaultBlock)
-	case err := <-errCh:
-		require.ErrorIs(s.T(), err, context.Canceled)
-	case <-time.After(24 * time.Hour):
-		require.Fail(s.T(), "timeoout")
+	count := 0
+	for {
+		select {
+		case vaultBlock := <-receivedVaultTxCh:
+			log.Info().Msgf("Received vaultBlock: %d, %v", vaultBlock.Height, vaultBlock.Hash)
+			count++
+		case err := <-errCh:
+			require.ErrorIs(s.T(), err, context.Canceled)
+		case <-time.After(24 * time.Hour):
+			require.Fail(s.T(), "timeoout")
+		}
 	}
-	cancel()
 }

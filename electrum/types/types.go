@@ -127,5 +127,6 @@ type VaultTx struct {
 type VaultBlock struct {
 	Hash     string    `json:"hash"`
 	Height   int       `json:"height"`
+	Time     uint64    `json:"time"`
 	VaultTxs []VaultTx `json:"txes"`
 }
