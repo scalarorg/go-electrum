@@ -535,7 +535,7 @@ func (c *Client) BlockchainHeaderSubscribe(ctx context.Context,
 	params ...interface{}) {
 	c.registerNotification("blockchain.headers.subscribe", func(params json.RawMessage) {
 		log.Trace().Msgf("Handle blockchain header data in notification message: %d bytes", len(params))
-		headers, err := parseBlockchainHeadersResponse(params)
+		headers, err := ParseBlockchainHeadersResponse(params)
 		if err != nil {
 			result(nil, err)
 			return
@@ -553,8 +553,8 @@ func (c *Client) BlockchainHeaderSubscribe(ctx context.Context,
 				result(nil, err)
 				return
 			}
-			log.Trace().Msgf("Handle blockchain header data in notification message: %d bytes", len(responseBytes))
-			header, err := parseBlockchainHeaderResponse(responseBytes)
+			log.Trace().Msgf("Handle blockchain header data in response message: %d bytes", len(responseBytes))
+			header, err := ParseBlockchainHeaderResponse(responseBytes)
 			result(header, err)
 		},
 		"blockchain.headers.subscribe",
@@ -572,7 +572,7 @@ func (c *Client) Close() {
 	c.rpc.Close()
 }
 
-func parseBlockchainHeaderResponse(responseBytes []byte) (*types.BlockchainHeader, error) {
+func ParseBlockchainHeaderResponse(responseBytes []byte) (*types.BlockchainHeader, error) {
 	var header types.HeaderEntry
 	if err := json.Unmarshal(responseBytes, &header); err != nil {
 		log.Error().Msgf("Error while parsing blockchain header from server: %v", err)
@@ -582,7 +582,7 @@ func parseBlockchainHeaderResponse(responseBytes []byte) (*types.BlockchainHeade
 	return &chainHeader, nil
 }
 
-func parseBlockchainHeadersResponse(responseBytes []byte) ([]types.BlockchainHeader, error) {
+func ParseBlockchainHeadersResponse(responseBytes []byte) ([]types.BlockchainHeader, error) {
 	var headers []types.HeaderEntry
 	if err := json.Unmarshal(responseBytes, &headers); err != nil {
 		log.Error().Msgf("Error while parsing blockchain header from server: %v", err)
