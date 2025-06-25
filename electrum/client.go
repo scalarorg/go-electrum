@@ -252,12 +252,27 @@ func (c *Client) SubscribeEvent(ctx context.Context,
 		log.Info().Msg("Handle notification message")
 		handler(params, nil)
 	})
-	ctx, cancel := c.timeoutCtx(ctx)
 	err := c.rpc.Method(ctx, func(responseBytes []byte, err error) {
-		defer cancel()
 		log.Info().Msgf("Handle response message: %d bytes", len(responseBytes))
 		handler(responseBytes, err)
 	}, method, params...)
+	if err != nil {
+		log.Error().Msgf("Error in SubscribeEvent: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (c *Client) SubscribeEventBlocking(ctx context.Context,
+	method string,
+	handler func(params json.RawMessage, err error),
+	response interface{},
+	params ...interface{}) error {
+	c.registerNotification(method, func(params json.RawMessage) {
+		log.Info().Msg("Handle notification message")
+		handler(params, nil)
+	})
+	err := c.rpc.MethodBlocking(ctx, response, method, params...)
 	if err != nil {
 		log.Error().Msgf("Error in SubscribeEvent: %v", err)
 		return err
@@ -544,32 +559,30 @@ func (c *Client) BlockchainHeaderSubscribe(ctx context.Context,
 			return
 		}
 	})
-	ctx, cancel := c.timeoutCtx(ctx)
-	err := c.rpc.Method(
+	var header types.HeaderEntry
+	err := c.rpc.MethodBlocking(
 		ctx,
-		func(responseBytes []byte, err error) {
-			defer cancel()
-			if err != nil {
-				result(nil, err)
-				return
-			}
-			log.Trace().Msgf("Handle blockchain header data in response message: %d bytes", len(responseBytes))
-			header, err := ParseBlockchainHeaderResponse(responseBytes)
-			result(header, err)
-		},
+		&header,
 		"blockchain.headers.subscribe",
 		params...)
 	if err != nil {
 		log.Error().Msgf("Error in BlockchainHeaderSubscribe: %v", err)
 		result(nil, err)
+	} else {
+		chainHeader := types.ParseHeaderEntry(&header)
+		result(&chainHeader, nil)
 	}
 }
 
 // Close closes the connection and shuts down all pending requests. All pending requests will be
 // resolved with an error.
 func (c *Client) Close() {
-	close(c.quitCh)
-	c.rpc.Close()
+	if c.quitCh != nil {
+		close(c.quitCh)
+	}
+	if c.rpc != nil {
+		c.rpc.Close()
+	}
 }
 
 func ParseBlockchainHeaderResponse(responseBytes []byte) (*types.BlockchainHeader, error) {

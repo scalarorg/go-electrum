@@ -34,10 +34,8 @@ import (
 // Before running the test, you need to start the electrum server:
 // Todo: build a docker image for btc regtest and electrum server
 // const electrsRpcServer = "electrs4.btc.scalar.org:80"
-// const electrsRpcServer = "192.168.1.254:60001"
-const electrsRpcServer = "18.140.72.123:60001"
 
-// const electrsRpcServer = "127.0.0.1:60001"
+const electrsRpcServer = "127.0.0.1:60001"
 
 func TestPingElectrum(t *testing.T) {
 	// Local electrum server for btc testnet4
@@ -169,7 +167,46 @@ func (s *vaultClientTestsuite) TestMerkleRoot() {
 
 	//}
 }
-
+func (s *vaultClientTestsuite) TestBlockHeader() {
+	method := "blockchain.headers.subscribe"
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	errCh := make(chan error)
+	receivedHeaderCh := make(chan *types.BlockchainHeader)
+	var headerEntry types.HeaderEntry
+	onBlockHeader := func(params json.RawMessage, err error) {
+		require.NoError(s.T(), err)
+		log.Info().Msgf("Received header entry: %v", string(params))
+		var headerEntry types.HeaderEntry
+		err = json.Unmarshal(params, &headerEntry)
+		if err != nil {
+			log.Info().Msgf("error unmarshalling params: %v, response: %v", err, string(params))
+			return
+		}
+		log.Info().Msgf("Received header entry: %d, %v", headerEntry.Height, headerEntry.Hash)
+		blockHeader := types.ParseHeaderEntry(&headerEntry)
+		log.Info().Msgf("blockHeader: %+v", blockHeader)
+		receivedHeaderCh <- &blockHeader
+	}
+	err := s.client.SubscribeEvent(ctx, method, onBlockHeader, &headerEntry)
+	require.NoError(s.T(), err)
+	log.Info().Msgf("Received 1 header entry: %+v", headerEntry)
+	count := 0
+	for {
+		select {
+		case blockchainHeader := <-receivedHeaderCh:
+			log.Info().Msgf("Received blockchain header: %d, %v", blockchainHeader.Height, blockchainHeader.Hash)
+			count++
+			// Exit after receiving some data
+			if count >= 5 {
+				return
+			}
+		case err := <-errCh:
+			require.ErrorIs(s.T(), err, context.Canceled)
+			return
+		}
+	}
+}
 func (s *vaultClientTestsuite) TestBlock86055MerkleVerification() {
 	log.Info().Msgf("TestBlock86055MerkleVerification")
 	txHashMethod := "blockchain.transaction.id_from_pos"
@@ -387,7 +424,6 @@ func (s *vaultClientTestsuite) TestVaultBlocksSubscribe() {
 	}
 	err := s.client.SubscribeEvent(ctx, "vault.blocks.subscribe", onVaultBlocks, params...)
 	require.NoError(s.T(), err)
-
 	// Wait for a reasonable amount of time for data, then exit
 	timeout := time.After(10 * time.Second)
 	count := 0
